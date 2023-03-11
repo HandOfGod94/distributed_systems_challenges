@@ -1,4 +1,4 @@
-package = "echo"
+package = "echoserver"
 version = "0.1.0-1"
 source = {
   url = "..." -- We don't have one yet
@@ -13,13 +13,18 @@ description = {
 }
 dependencies = {
   "lua >= 5.1, < 5.5",
-  "lua-cjson = 2.1.0.10-1",
-  "penlight = 1.13.1-1"
+  "lua-cjson == 2.1.0.10-1",
+  "penlight == 1.13.1-1"
 }
 build = {
   -- We'll start here.
   type = "builtin",
+  install = {
+    bin = {
+      echoserver = "lua/echo.lua"
+    }
+  },
   modules = {
-    echo = "lua/echo.lua"
+    echoserver = "lua/echo.lua"
   }
 }
