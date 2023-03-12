@@ -1,5 +1,3 @@
-#!/usr/bin/env fennel
-
 (local cjson (require :cjson))
 (local inspect (require :inspect))
 (local tablex (require :pl.tablex))
