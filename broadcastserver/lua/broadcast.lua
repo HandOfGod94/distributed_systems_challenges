@@ -6,6 +6,9 @@ cjson.encode_empty_table_as_object(false)
 local node_topology = nil
 local node_id = nil
 local message_store = pl_set({})
+local function contains_3f(message, pset)
+  return (nil ~= pset[message])
+end
 local function reply(resp)
   if (nil ~= resp) then
     return print(cjson.encode(resp))
@@ -35,7 +38,7 @@ local function handle_broadcast(dest_node, body)
   local msg_id = _let_4_["msg_id"]
   local message = _let_4_["message"]
   local neighbours = node_topology[node_id]
-  if (nil == message_store[message]) then
+  if not contains_3f(message, message_store) then
     message_store = (message_store + message)
     local function _5_(_241)
       return (_241 ~= dest_node)

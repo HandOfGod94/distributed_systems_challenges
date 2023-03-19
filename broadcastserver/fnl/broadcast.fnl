@@ -9,6 +9,10 @@
 (var node-id nil)
 (var message-store (pl-set []))
 
+(fn contains? [message pset]
+  (not= nil (. pset message)))
+  
+
 (fn reply [resp]
   (when (not= nil resp)
     (-> (cjson.encode resp)
@@ -36,7 +40,7 @@
 (fn handle-broadcast [dest-node body]
   (let [{: msg_id : message} body
         neighbours (. node-topology node-id)]
-    (when (= nil (. message-store message))
+    (when (not (contains? message message-store))
       (set message-store (+ message-store message))
       (-> (seq.list neighbours)
           (seq.filter #(not= $1 dest-node))
