@@ -1,6 +1,7 @@
 (local cjson (require :cjson))
 (local inspect (require :inspect))
 (local pl-set (require :pl.Set))
+(local seq (require :pl.seq))
 
 (cjson.encode_empty_table_as_object false)
 
@@ -37,9 +38,9 @@
         neighbours (. node-topology node-id)]
     (when (= nil (. message-store message))
       (set message-store (+ message-store message))
-      (each [_ neighbour-node (ipairs neighbours)]
-        (when (not= neighbour-node dest-node)
-          (send-request neighbour-node {:type :broadcast : message}))))
+      (-> (seq.list neighbours)
+          (seq.filter #(not= $1 dest-node))
+          (seq.foreach #(send-request $1 {:type :broadcast : message}))))
     (when (not= nil msg_id)
       {:src node-id
        :dest dest-node
