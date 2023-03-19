@@ -8,10 +8,14 @@
 (var node-id nil)
 (var message-store (pl-set []))
 
+(fn reply [resp]
+  (when (not= nil resp)
+    (-> (cjson.encode resp)
+        (print))))
+
 (fn send-request [node body]
   (-> {:src node-id :dest node : body}
-      (cjson.encode)
-      (print)))
+      (reply)))
 
 (fn handle-topology [dest-node body]
   (io.stderr:write "\nProcessing topology")
@@ -34,7 +38,8 @@
     (when (= nil (. message-store message))
       (set message-store (+ message-store message))
       (each [_ neighbour-node (ipairs neighbours)]
-        (send-request neighbour-node {:type :broadcast : message})))
+        (when (not= neighbour-node dest-node)
+          (send-request neighbour-node {:type :broadcast : message}))))
     (when (not= nil msg_id)
       {:src node-id
        :dest dest-node
@@ -44,12 +49,10 @@
   (let [{: msg_id} body]
     {:src node-id
      :dest dest-node
-     :body {:msg_id (+ msg_id 1) :in_reply_to msg_id :messages (pl-set.values message-store) :type :read_ok}}))
-
-(fn reply [resp]
-  (when (not= nil resp)
-    (-> (cjson.encode resp)
-        (print))))
+     :body {:msg_id (+ msg_id 1)
+            :in_reply_to msg_id
+            :messages (pl-set.values message-store)
+            :type :read_ok}}))
 
 (fn main []
   (while true
