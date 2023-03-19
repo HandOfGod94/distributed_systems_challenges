@@ -41,11 +41,10 @@
        :body {:msg_id (+ msg_id 1) :in_reply_to msg_id :type :broadcast_ok}})))
 
 (fn handle-read [dest-node body]
-  (let [{: msg_id} body
-        messages (if (= nil message-store) [] (pl-set.values message-store))]
+  (let [{: msg_id} body]
     {:src node-id
      :dest dest-node
-     :body {:msg_id (+ msg_id 1) :in_reply_to msg_id : messages :type :read_ok}}))
+     :body {:msg_id (+ msg_id 1) :in_reply_to msg_id :messages (pl-set.values message-store) :type :read_ok}}))
 
 (fn reply [resp]
   (when (not= nil resp)

@@ -43,13 +43,7 @@ end
 local function handle_read(dest_node, body)
   local _let_6_ = body
   local msg_id = _let_6_["msg_id"]
-  local messages
-  if (nil == message_store) then
-    messages = {}
-  else
-    messages = pl_set.values(message_store)
-  end
-  return {src = node_id, dest = dest_node, body = {msg_id = (msg_id + 1), in_reply_to = msg_id, messages = messages, type = "read_ok"}}
+  return {src = node_id, dest = dest_node, body = {msg_id = (msg_id + 1), in_reply_to = msg_id, messages = pl_set.values(message_store), type = "read_ok"}}
 end
 local function reply(resp)
   if (nil ~= resp) then
@@ -61,24 +55,24 @@ end
 local function main()
   while true do
     local input = cjson.decode(io.read("*l"))
-    local _let_9_ = input
-    local src = _let_9_["src"]
-    local body = _let_9_["body"]
-    local _let_10_ = body
-    local node_id0 = _let_10_["node_id"]
-    local type = _let_10_["type"]
+    local _let_8_ = input
+    local src = _let_8_["src"]
+    local body = _let_8_["body"]
+    local _let_9_ = body
+    local node_id0 = _let_9_["node_id"]
+    local type = _let_9_["type"]
     if (nil == node_id) then
       node_id = node_id0
     else
     end
-    local _12_ = type
-    if (_12_ == "init") then
+    local _11_ = type
+    if (_11_ == "init") then
       reply(handle_init(src, body))
-    elseif (_12_ == "topology") then
+    elseif (_11_ == "topology") then
       reply(handle_topology(src, body))
-    elseif (_12_ == "broadcast") then
+    elseif (_11_ == "broadcast") then
       reply(handle_broadcast(src, body))
-    elseif (_12_ == "read") then
+    elseif (_11_ == "read") then
       reply(handle_read(src, body))
     else
     end
