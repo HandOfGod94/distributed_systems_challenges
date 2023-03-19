@@ -23,20 +23,26 @@ local function handle_init(dest_node, body)
   return {src = node_id, dest = dest_node, body = {msg_id = (msg_id + 1), in_reply_to = msg_id, type = "init_ok"}}
 end
 local function handle_broadcast(dest_node, body)
-  do end (io.stderr):write(("\n Initaiting broacast from " .. node_id))
   local _let_3_ = body
   local msg_id = _let_3_["msg_id"]
   local message = _let_3_["message"]
   local neighbours = node_topology[node_id]
-  message_store = (message_store + message)
-  for _, neighbour_node in ipairs(neighbours) do
-    send_request(neighbour_node, body)
+  if (nil == message_store[message]) then
+    message_store = (message_store + message)
+    for _, neighbour_node in ipairs(neighbours) do
+      send_request(neighbour_node, {type = "broadcast", message = message})
+    end
+  else
   end
-  return {src = node_id, dest = dest_node, body = {msg_id = (msg_id + 1), in_reply_to = msg_id, type = "broadcast_ok"}}
+  if (nil ~= msg_id) then
+    return {src = node_id, dest = dest_node, body = {msg_id = (msg_id + 1), in_reply_to = msg_id, type = "broadcast_ok"}}
+  else
+    return nil
+  end
 end
 local function handle_read(dest_node, body)
-  local _let_4_ = body
-  local msg_id = _let_4_["msg_id"]
+  local _let_6_ = body
+  local msg_id = _let_6_["msg_id"]
   local messages
   if (nil == message_store) then
     messages = {}
@@ -45,28 +51,35 @@ local function handle_read(dest_node, body)
   end
   return {src = node_id, dest = dest_node, body = {msg_id = (msg_id + 1), in_reply_to = msg_id, messages = messages, type = "read_ok"}}
 end
+local function reply(resp)
+  if (nil ~= resp) then
+    return print(cjson.encode(resp))
+  else
+    return nil
+  end
+end
 local function main()
   while true do
     local input = cjson.decode(io.read("*l"))
-    local _let_6_ = input
-    local src = _let_6_["src"]
-    local body = _let_6_["body"]
-    local _let_7_ = body
-    local node_id0 = _let_7_["node_id"]
-    local type = _let_7_["type"]
+    local _let_9_ = input
+    local src = _let_9_["src"]
+    local body = _let_9_["body"]
+    local _let_10_ = body
+    local node_id0 = _let_10_["node_id"]
+    local type = _let_10_["type"]
     if (nil == node_id) then
       node_id = node_id0
     else
     end
-    local _9_ = type
-    if (_9_ == "init") then
-      print(cjson.encode(handle_init(src, body)))
-    elseif (_9_ == "topology") then
-      print(cjson.encode(handle_topology(src, body)))
-    elseif (_9_ == "broadcast") then
-      print(cjson.encode(handle_broadcast(src, body)))
-    elseif (_9_ == "read") then
-      print(cjson.encode(handle_read(src, body)))
+    local _12_ = type
+    if (_12_ == "init") then
+      reply(handle_init(src, body))
+    elseif (_12_ == "topology") then
+      reply(handle_topology(src, body))
+    elseif (_12_ == "broadcast") then
+      reply(handle_broadcast(src, body))
+    elseif (_12_ == "read") then
+      reply(handle_read(src, body))
     else
     end
   end

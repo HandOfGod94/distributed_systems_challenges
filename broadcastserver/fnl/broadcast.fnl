@@ -9,9 +9,7 @@
 (var message-store (pl-set []))
 
 (fn send-request [node body]
-  (-> {:src node-id 
-       :dest node 
-       :body body}
+  (-> {:src node-id :dest node : body}
       (cjson.encode)
       (print)))
 
@@ -31,27 +29,28 @@
      :body {:msg_id (+ msg_id 1) :in_reply_to msg_id :type :init_ok}}))
 
 (fn handle-broadcast [dest-node body]
-  (io.stderr:write (.. "\n Initaiting broacast from " node-id))
   (let [{: msg_id : message} body
         neighbours (. node-topology node-id)]
-    (set message-store (+ message-store message))
-    (each [_ neighbour-node (ipairs neighbours)]
-      (send-request neighbour-node body))
-    {:src node-id
-     :dest dest-node
-     :body {:msg_id (+ msg_id 1) :in_reply_to msg_id :type :broadcast_ok}}))
+    (when (= nil (. message-store message))
+      (set message-store (+ message-store message))
+      (each [_ neighbour-node (ipairs neighbours)]
+        (send-request neighbour-node {:type :broadcast : message})))
+    (when (not= nil msg_id)
+      {:src node-id
+       :dest dest-node
+       :body {:msg_id (+ msg_id 1) :in_reply_to msg_id :type :broadcast_ok}})))
 
 (fn handle-read [dest-node body]
   (let [{: msg_id} body
-        messages (if (= nil message-store)
-                     []
-                     (pl-set.values message-store))]
+        messages (if (= nil message-store) [] (pl-set.values message-store))]
     {:src node-id
      :dest dest-node
-     :body {:msg_id (+ msg_id 1)
-            :in_reply_to msg_id
-            :messages messages
-            :type :read_ok}}))
+     :body {:msg_id (+ msg_id 1) :in_reply_to msg_id : messages :type :read_ok}}))
+
+(fn reply [resp]
+  (when (not= nil resp)
+    (-> (cjson.encode resp)
+        (print))))
 
 (fn main []
   (while true
@@ -63,16 +62,12 @@
         (set node-id node_id))
       (match type
         :init (-> (handle-init src body)
-                  (cjson.encode)
-                  (print))
+                  (reply))
         :topology (-> (handle-topology src body)
-                      (cjson.encode)
-                      (print))
+                      (reply))
         :broadcast (-> (handle-broadcast src body)
-                       (cjson.encode)
-                       (print))
+                       (reply))
         :read (-> (handle-read src body)
-                  (cjson.encode)
-                  (print))))))
+                  (reply))))))
 
 (main)
