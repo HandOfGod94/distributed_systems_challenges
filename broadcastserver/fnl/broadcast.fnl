@@ -1,9 +1,12 @@
 (local cjson (require :cjson))
 (local inspect (require :inspect))
+(local pl-set (require :pl.Set))
+
+(cjson.encode_empty_table_as_object false)
 
 (var node-topology nil)
 (var node-id nil)
-(var message-store [nil])
+(var message-store (pl-set []))
 
 (fn send-request [node body]
   (-> {:src node-id 
@@ -29,22 +32,25 @@
 
 (fn handle-broadcast [dest-node body]
   (io.stderr:write (.. "\n Initaiting broacast from " node-id))
-  (let [{: msg_id : message} body]
-    (table.concat message-store message)
-    (each [node neighbours (pairs node-topology)]
-      (each [_ neighbour-node (ipairs neighbours)]
-        (send-request neighbour-node body)))
+  (let [{: msg_id : message} body
+        neighbours (. node-topology node-id)]
+    (set message-store (+ message-store message))
+    (each [_ neighbour-node (ipairs neighbours)]
+      (send-request neighbour-node body))
     {:src node-id
      :dest dest-node
      :body {:msg_id (+ msg_id 1) :in_reply_to msg_id :type :broadcast_ok}}))
 
 (fn handle-read [dest-node body]
-  (let [{: msg_id} body]
+  (let [{: msg_id} body
+        messages (if (= nil message-store)
+                     []
+                     (pl-set.values message-store))]
     {:src node-id
      :dest dest-node
      :body {:msg_id (+ msg_id 1)
             :in_reply_to msg_id
-            :messages message-store
+            :messages messages
             :type :read_ok}}))
 
 (fn main []
