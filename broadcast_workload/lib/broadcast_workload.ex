@@ -1,18 +1,31 @@
 defmodule BroadcastWorkload do
-  @moduledoc """
-  Documentation for `BroadcastWorkload`.
-  """
+  alias BroadcastWorkload.Router
 
-  @doc """
-  Hello world.
+  def read_input do
+    case IO.read(:stdio, :line) do
+      :eof ->
+        :ok
 
-  ## Examples
+      {:error, reason} ->
+        IO.puts(:stderr, "failed to process requests #{reason}")
 
-      iex> BroadcastWorkload.hello()
-      :world
+      line ->
+        line
+        |> Jason.decode!(keys: :atoms)
+        |> Router.dispatch()
+        read_input()
+    end
+  end
 
-  """
-  def hello do
-    :world
+  def start do
+    children = [BroadcastWorkload.Router]
+
+    opts = [strategy: :one_for_one, name: BroadcastWorkload.Supervisor]
+    Supervisor.start_link(children, opts)
+  end
+
+  def main(_args \\ []) do
+    start()
+    read_input()
   end
 end
