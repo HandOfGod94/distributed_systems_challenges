@@ -17,29 +17,34 @@ defmodule BroadcastWorkload.Requester do
   end
 
   @impl GenServer
-  def handle_cast(request, state) do 
-    {:noreply, state, {:continue, request}}
+  def handle_cast(_request, state) do 
+    {:noreply, state, {:continue, :send_request}}
   end
 
   @impl GenServer
-  def handle_continue(_request, state) do 
+  def handle_continue(:send_request, state) do 
     if !state.got_response do 
       send_request(state.request)
       Process.send_after(self(), :timeout, @timeout)
+      {:noreply, state}
+    else
+      {:stop, :normal}
     end
-    {:noreply, state}
+  end
+
+  def handle_continue({:send_ack, message}, state) do 
+    send(state.client, {:response, message})
   end
 
   @impl GenServer
   def handle_info(:timeout, state) do 
-    {:noreply, state, {:continue, state.request}}
+    {:noreply, state, {:continue, :send_request}}
   end
 
   @impl GenServer
   def handle_info(:broadcast_ack, state) do 
     %{body: %{message: message}} = state.request
-    send(state.client, {:response, message})
-    {:noreply, %{state | got_response: true}}
+    {:noreply, %{state | got_response: true}, {:continue, {:send_ack, message}}}
   end
 
   defp send_request(request) do

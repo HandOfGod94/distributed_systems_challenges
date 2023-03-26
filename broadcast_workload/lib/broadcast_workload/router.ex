@@ -90,7 +90,7 @@ defmodule BroadcastWorkload.Router do
 
   @impl GenServer
   def handle_call(%{body: %{type: "broadcast_ok"}} = input, _from, state) do
-    %{dest: src, body: %{msg_id: msg_id}} = input
+    %{dest: src, body: %{in_reply_to: msg_id}} = input
     if state.pending[msg_id][src], do: send(state.pending[msg_id][src], :broadcast_ack)
     {:reply, {:ok, :noop}, state}
   end
