@@ -13,12 +13,16 @@ defmodule BroadcastWorkload do
         line
         |> Jason.decode!(keys: :atoms)
         |> Router.dispatch()
+
         read_input()
     end
   end
 
   def start do
-    children = [BroadcastWorkload.Router]
+    children = [
+      BroadcastWorkload.Router,
+      {DynamicSupervisor, name: BroadcastWorkload.DynamicSupervisor}
+    ]
 
     opts = [strategy: :one_for_one, name: BroadcastWorkload.Supervisor]
     Supervisor.start_link(children, opts)

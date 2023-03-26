@@ -1,5 +1,6 @@
 defmodule BroadcastWorkload.Router do
   use GenServer
+  alias BroadcastWorkload.Requester
 
   # client apis
   def start_link(_opts) do
@@ -19,7 +20,7 @@ defmodule BroadcastWorkload.Router do
   # server callbacks
   @impl GenServer
   def init(_) do
-    {:ok, %{node_id: nil, neighbours: [], messages: MapSet.new()}}
+    {:ok, %{node_id: nil, neighbours: [], messages: MapSet.new(), pending: %{}}}
   end
 
   @impl GenServer
@@ -87,6 +88,14 @@ defmodule BroadcastWorkload.Router do
       }}, state}
   end
 
+  @impl GenServer
+  def handle_call(%{body: %{type: "broadcast_ok"}} = input, _from, state) do
+    %{dest: src, body: %{msg_id: msg_id}} = input
+    if state.pending[msg_id][src], do: send(state.pending[msg_id][src], :broadcast_ack)
+    {:reply, {:ok, :noop}, state}
+  end
+
+  @impl GenServer
   def handle_call(unknown_input, _from, state) do
     {:reply,
      {:error,
@@ -95,23 +104,43 @@ defmodule BroadcastWorkload.Router do
   end
 
   @impl GenServer
-  def handle_continue(message, state) do
+  def handle_info({:response, message}, state) do
+    {:noreply, MapSet.put(state.messages, message)}
+  end
+
+  @impl GenServer
+  def handle_continue(%{msg_id: msg_id} = body, state) do
     IO.puts(
       :stderr,
       "broadcasting to neighbours #{inspect(state.neighbours)} from #{state.node_id}"
     )
 
-    state
-    |> Map.get(:neighbours, [])
-    |> Enum.reject(&(&1 == state.node_id))
-    |> Enum.each(&request(state.node_id, &1, message))
+    # pending structure = %{msg_id : %{node_id: pid}}
+    requests =
+      state.neighbours
+      |> Enum.reject(&(&1 == state.node_id))
+      |> Enum.map(&%{src: state.node_id, dest: &1, body: body})
 
-    {:noreply, state}
+    pids =
+      for request <- requests, into: [] do
+        DynamicSupervisor.start_child(
+          BroadcastWorkload.DynamicSupervisor,
+          {Requester, %{request: request, client: self()}}
+        )
+      end
+
+    pending =
+      pids
+      |> Enum.map(&elem(&1, 1))
+      |> Enum.zip(state.neighbours)
+      |> Enum.into(%{}, fn {neighbour_node, pid} -> {msg_id, Map.new([{neighbour_node, pid}])} end)
+
+    {:noreply, %{state | pending: pending}, {:continue, {:fire, pids}}}
   end
 
-  defp request(src, dest, body) do
-    %{src: src, dest: dest, body: body}
-    |> Jason.encode!()
-    |> IO.puts()
+  @impl GenServer
+  def handle_continue({:fire, pids}, state) do
+    Enum.each(pids, fn {:ok, pid} -> Requester.fire(pid) end)
+    {:noreply, state}
   end
 end
