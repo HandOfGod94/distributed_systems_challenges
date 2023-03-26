@@ -1,5 +1,5 @@
 defmodule BroadcastWorkload do
-  alias BroadcastWorkload.Router
+  alias BroadcastWorkload.Handler
 
   def read_input do
     case IO.read(:stdio, :line) do
@@ -12,7 +12,7 @@ defmodule BroadcastWorkload do
       line ->
         line
         |> Jason.decode!(keys: :atoms)
-        |> Router.dispatch()
+        |> Handler.dispatch()
 
         read_input()
     end
@@ -20,7 +20,7 @@ defmodule BroadcastWorkload do
 
   def start do
     children = [
-      BroadcastWorkload.Router,
+      BroadcastWorkload.Handler,
       {DynamicSupervisor, name: BroadcastWorkload.DynamicSupervisor}
     ]
 

@@ -1,4 +1,4 @@
-defmodule BroadcastWorkload.Router do
+defmodule BroadcastWorkload.Handler do
   use GenServer
   alias BroadcastWorkload.Requester
 
