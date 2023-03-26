@@ -22,11 +22,8 @@ defmodule BroadcastWorkload.Router do
   end
 
   @impl GenServer
-  def handle_call(
-        %{src: dest, body: %{type: "init", node_id: node_id, msg_id: msg_id}},
-        _from,
-        state
-      ) do
+  def handle_call(%{body: %{type: "init"}} = input, _from, state) do
+    %{src: dest, body: %{node_id: node_id, msg_id: msg_id}} = input
     IO.puts(:stderr, "initializing node #{node_id}")
 
     {:reply,
@@ -39,11 +36,9 @@ defmodule BroadcastWorkload.Router do
   end
 
   @impl GenServer
-  def handle_call(
-        %{src: dest, body: %{type: "topology", topology: topology, msg_id: msg_id}},
-        _from,
-        state
-      ) do
+  def handle_call(%{body: %{type: "topology"}} = input, _from, state) do
+    %{src: dest, body: %{topology: topology, msg_id: msg_id}} = input
+
     {:reply,
      {:ok,
       %{
@@ -54,11 +49,9 @@ defmodule BroadcastWorkload.Router do
   end
 
   @impl GenServer
-  def handle_call(
-        %{src: dest, body: %{type: "broadcast", message: message, msg_id: msg_id}},
-        _from,
-        state
-      ) do
+  def handle_call(%{body: %{type: "broadcast"}} = input, _from, state) do
+    %{src: dest, body: %{message: message, msg_id: msg_id}} = input
+
     {:reply,
      {:ok,
       %{
@@ -69,11 +62,9 @@ defmodule BroadcastWorkload.Router do
   end
 
   @impl GenServer
-  def handle_call(
-        %{src: dest, body: %{type: "read", msg_id: msg_id}},
-        _from,
-        state
-      ) do
+  def handle_call(%{body: %{type: "read"}} = input, _from, state) do
+    %{src: dest, body: %{msg_id: msg_id}} = input
+
     {:reply,
      {:ok,
       %{
