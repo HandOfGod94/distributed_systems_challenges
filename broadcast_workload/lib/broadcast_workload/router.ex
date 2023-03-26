@@ -57,15 +57,7 @@ defmodule BroadcastWorkload.Router do
     if MapSet.member?(state.messages, message) || dest == state.node_id do
       {:reply, {:ok, :noop}, state}
     else
-      IO.puts(
-        :stderr,
-        "broadcasting to neighbours #{inspect(state.neighbours)} from #{state.node_id}"
-      )
-
-      state
-      |> Map.get(:neighbours, [])
-      |> Enum.filter(&(&1 != state.node_id))
-      |> Enum.each(&request(state.node_id, &1, body))
+      new_messages = MapSet.put(state.messages, message)
 
       {:reply,
        {:ok,
@@ -73,7 +65,7 @@ defmodule BroadcastWorkload.Router do
           src: state.node_id,
           dest: dest,
           body: %{type: "broadcast_ok", in_reply_to: msg_id, msg_id: msg_id + 1}
-        }}, %{state | messages: MapSet.put(state.messages, message)}}
+        }}, %{state | messages: new_messages}, {:continue, body}}
     end
   end
 
@@ -100,6 +92,21 @@ defmodule BroadcastWorkload.Router do
      {:error,
       "unknown command recieved #{inspect(unknown_input)}. Current state: #{inspect(state)}"},
      state}
+  end
+
+  @impl GenServer
+  def handle_continue(message, state) do
+    IO.puts(
+      :stderr,
+      "broadcasting to neighbours #{inspect(state.neighbours)} from #{state.node_id}"
+    )
+
+    state
+    |> Map.get(:neighbours, [])
+    |> Enum.reject(&(&1 == state.node_id))
+    |> Enum.each(&request(state.node_id, &1, message))
+
+    {:noreply, state}
   end
 
   defp request(src, dest, body) do
