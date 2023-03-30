@@ -21,6 +21,7 @@ defmodule BroadcastWorkload do
   def start do
     children = [
       BroadcastWorkload.Handler,
+      BroadcastWorkload.NodeRegistry,
       {DynamicSupervisor, name: BroadcastWorkload.DynamicSupervisor}
     ]
 
