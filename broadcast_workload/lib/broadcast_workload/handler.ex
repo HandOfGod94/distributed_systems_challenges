@@ -1,4 +1,4 @@
-defmodule BroadcastWorkload.Controller do
+defmodule BroadcastWorkload.Handler do
   alias BroadcastWorkload.{NodeRegistry, MessageRepository, TaskSupervisor}
 
   @timeout 1000

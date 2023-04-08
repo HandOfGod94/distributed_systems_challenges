@@ -1,13 +1,13 @@
 defmodule BroadcastWorkload.Router do
-  alias BroadcastWorkload.Controller
+  alias BroadcastWorkload.Handler
 
   def routes do
     %{
-      "init" => &Controller.handle_init/1,
-      "topology" => &Controller.handle_topology/1,
-      "broadcast" => &Controller.handle_broadcast/1,
-      "read" => &Controller.handle_read/1,
-      "broadcast_ok" => &Controller.handle_broadcast_ok/1
+      "init" => &Handler.handle_init/1,
+      "topology" => &Handler.handle_topology/1,
+      "broadcast" => &Handler.handle_broadcast/1,
+      "read" => &Handler.handle_read/1,
+      "broadcast_ok" => &Handler.handle_broadcast_ok/1
     }
   end
 
