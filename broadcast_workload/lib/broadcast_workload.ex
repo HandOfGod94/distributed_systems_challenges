@@ -22,7 +22,6 @@ defmodule BroadcastWorkload do
     children = [
       BroadcastWorkload.NodeRegistry,
       BroadcastWorkload.MessageRepository,
-      {Task.Supervisor, name: BroadcastWorkload.TaskSupervisor}
     ]
 
     opts = [strategy: :one_for_one, name: BroadcastWorkload.Supervisor]

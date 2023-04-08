@@ -5,16 +5,16 @@ defmodule BroadcastWorkload.MessageRepository do
     GenServer.start_link(__MODULE__, :ok, name: __MODULE__)
   end
 
-  def save_message(node_id, msg_id, message) do
-    GenServer.call(__MODULE__, {:save_message, node_id, msg_id, message})
+  def save_message(node_id, message) do
+    GenServer.call(__MODULE__, {:save_message, node_id, message})
   end
 
   def fetch_messages(node_id) do
     GenServer.call(__MODULE__, {:fetch_messages, node_id})
   end
 
-  def message_present?(node_id, msg_id) do
-    GenServer.call(__MODULE__, {:message_present?, node_id, msg_id})
+  def message_present?(node_id, message) do
+    GenServer.call(__MODULE__, {:message_present?, node_id, message})
   end
 
   def save_replies(from_node, msg_id) do
@@ -31,15 +31,15 @@ defmodule BroadcastWorkload.MessageRepository do
   end
 
   @impl GenServer
-  def handle_call({:save_message, node_id, msg_id, message}, _from, state) do
+  def handle_call({:save_message, node_id, message}, _from, state) do
     messages_sent = state.messages_sent
 
     messages_sent =
       Map.update(
         messages_sent,
         node_id,
-        Map.new([{msg_id, message}]),
-        &Map.put_new(&1, msg_id, message)
+        MapSet.new([message]),
+        &MapSet.put(&1, message)
       )
 
     {:reply, :ok, %{state | messages_sent: messages_sent}}
@@ -48,16 +48,18 @@ defmodule BroadcastWorkload.MessageRepository do
   def handle_call({:fetch_messages, node_id}, _from, state) do
     messages =
       state.messages_sent
-      |> Map.get(node_id, %{})
-      |> Enum.map(fn {_, v} -> v end)
-      |> Enum.into([])
+      |> Map.get(node_id, MapSet.new([]))
+      |> MapSet.to_list()
 
     {:reply, messages, state}
   end
 
-  def handle_call({:message_present?, node_id, msg_id}, _from, state) do
+  def handle_call({:message_present?, node_id, message}, _from, state) do
     messages_sent = state.messages_sent
-    result = Map.has_key?(messages_sent, node_id) && Map.has_key?(messages_sent[node_id], msg_id)
+
+    result =
+      Map.has_key?(messages_sent, node_id) && MapSet.member?(messages_sent[node_id], message)
+
     {:reply, result, state}
   end
 
